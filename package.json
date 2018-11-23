@@ -1,0 +1,22 @@
+{
+  "name": "bt-mesh",
+  "version": "1.0.0",
+  "description": "Bluetooth LE mesh client for nodeJS",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dmednis/node-bt-mesh.git"
+  },
+  "author": "Davis Mednis <davis.mednis95@gmail.com>",
+  "contributors": [
+    "Aigars Cibulskis <aigars.cibulskis95@gmail.com>",
+  ],
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/dmednis/node-bt-mesh/issues"
+  },
+  "homepage": "https://github.com/dmednis/node-bt-mesh#readme"
+}
