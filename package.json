@@ -12,11 +12,14 @@
   },
   "author": "Davis Mednis <davis.mednis95@gmail.com>",
   "contributors": [
-    "Aigars Cibulskis <aigars.cibulskis95@gmail.com>",
+    "Aigars Cibulskis <aigars.cibulskis95@gmail.com>"
   ],
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/dmednis/node-bt-mesh/issues"
   },
-  "homepage": "https://github.com/dmednis/node-bt-mesh#readme"
+  "homepage": "https://github.com/dmednis/node-bt-mesh#readme",
+  "dependencies": {
+    "dbus-native": "^0.2.5"
+  }
 }
