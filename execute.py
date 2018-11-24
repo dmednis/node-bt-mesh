@@ -213,26 +213,26 @@ class Model():
 class VndTextClient(Model):
     def __init__(self, mid):
         Model.__init__(self, vnd_id=mid)
-        self.cmd_ops = { 0xfbf105: self.text, # text
-                         0xfdf105: self.get_name, # get text
-                       }
-        self._responses = { 0x0fdf105 : self._get_name_rsp, # response with name
-                          }
+        self.HELLO_OP = 0xfbf105
+        self.PATIENT_OP = 0xfd05f1
+        self.cmd_ops = {
+                        self.HELLO_OP: self.hello_text,
+                        self.PATIENT_OP: self.patient_text,
+                      }
 
     def _reply_cb(state):
-      print('State ');
-      print(state)
+      print('State ', state);
       mainloop.quit()
 
     def _send_message(self, dest, key, data, reply_cb):
         node.Send(self.path, dest, key, data, reply_handler=reply_cb,
                   error_handler=error_cb)
 
-    def text(self, dst_str=None, key_idx_str=None, text_str=None):
-        print("{}: {} {} {}".format(self.text.__name__, dst_str, key_idx_str, text_str))
+    def hello_text(self, dst_str=None, key_idx_str=None, text_str=None):
+        print("{}: {} {} {}".format(self.hello_text.__name__, dst_str, key_idx_str, text_str))
 
         if dst_str == None or key_idx_str == None or text_str == None:
-            print("Wrong {} parameters".format(self.text.__name__))
+            print("Wrong {} parameters".format(self.hello_text.__name__))
             print("\tdst_addr key_index text")
             print("\n\texample: 29537 0 Participant")
 
@@ -240,7 +240,7 @@ class VndTextClient(Model):
 
         text_str = ''.join((text_str, '\x00'))
 
-        opcode = 0xfbf105
+        opcode = self.HELLO_OP
         dst = int(dst_str, 0)
         key_idx = int(key_idx_str)
         b_text = text_str.encode('ASCII')
@@ -250,30 +250,29 @@ class VndTextClient(Model):
 
         self._send_message(dst, key_idx, data, self._reply_cb)
 
-    def get_name(self, dst_str=None, key_idx_str=None):
-        print("{}: {} {}".format(self.get_name.__name__, dst_str, key_idx_str))
 
-        if dst_str == None or key_idx_str == None:
-            print("Wrong {} parameters".format(self.get_name.__name__))
-            print("\tdst_addr key_index")
-            print("\n\texample: 0x1234 0")
+    def patient_text(self, dst_str=None, key_idx_str=None, text_str=None):
+        print("{}: {} {} {}".format(self.patient_text.__name__, dst_str, key_idx_str, text_str))
+
+        if dst_str == None or key_idx_str == None or text_str == None:
+            print("Wrong {} parameters".format(self.patient_text.__name__))
+            print("\tdst_addr key_index text")
+            print("\n\texample: 29537 0 Participant")
 
             return
 
-        opcode = 0x0fdf105
+        text_str = ''.join((text_str, '\x00'))
+
+        opcode = self.PATIENT_OP
         dst = int(dst_str, 0)
         key_idx = int(key_idx_str)
+        b_text = text_str.encode('ASCII')
 
-        data = opcode.to_bytes(3, byteorder='big')
+        data = struct.pack('%ds' % len(b_text), b_text)
+        data = opcode.to_bytes(3, byteorder='big') + data
 
         self._send_message(dst, key_idx, data, self._reply_cb)
 
-    def _get_name_rsp(self, b_name):
-        print('{}: {}'.format(self._get_name_rsp.__name__, b_name))
-
-        str_name = b_name.decode('ASCII')
-        print("My name is: ", str_name)
-        return
 
     def process_message(self, source, key, data):
         print("{}, {}: {} {} {}".format(self.__class__.__name__,
@@ -284,166 +283,6 @@ class VndTextClient(Model):
         datalen = len(b_data)
 
         opcode = int.from_bytes(b_data[:3], 'big')
-
-        if opcode in self._responses.keys():
-            self._responses[opcode](b_data[3:])
-        else:
-            print("Not handled by", self.__class__.__name__)
-
-
-class OnOffClient(Model):
-    def __init__(self, mid):
-        Model.__init__(self, model_id=mid)
-        self.cmd_ops = { 0x8201: self.get_state, # get
-                         0x8202: self.set_state, # set
-                         0x8203: self.set_unack_state, # set unack
-                       }
-        self._responses = { 0x8204: self._get_state_rsp, # response state
-                          }
-
-    def _reply_cb(state):
-      print('State ')
-      print(state)
-      mainloop.quit()
-
-    def _send_message(self, dst, key, data, reply_cb):
-        print('OnOffClient send data')
-        node.Send(self.path, dst, key, data, reply_handler=reply_cb,
-                  error_handler=error_cb)
-
-    def get_state(self, dst_str=None, key_idx_str=None):
-        print("{}: {} {}".format(self.get_state.__name__, dst_str, key_idx_str))
-
-        if dst_str == None or key_idx_str == None:
-            print("Wrong {} parameters".format(self.get_state.__name__))
-            print("\tdst_addr key_index")
-            print("\n\texample: 0x1234 0")
-
-            return
-
-        opcode = 0x8201
-        dst = int(dst_str, 0)
-        key_idx = int(key_idx_str)
-
-        data = opcode.to_bytes(2, byteorder='big')
-
-        self._send_message(dst, key_idx, data, self._reply_cb)
-
-    def set_state(self, dst_str=None, key_idx_str=None, tid_str=None,
-                  state_str=None, ack_req=True):
-        print("{}: {} {} {} {} {}".format(self.set_state.__name__, dst_str,
-              key_idx_str, tid_str, state_str, ack_req))
-
-        if dst_str == None or key_idx_str == None or tid_str == None or \
-            state_str == None:
-            print("Wrong {} parameters".format(self.set_state.__name__))
-            print("\tstate tid")
-            print("\n\texample: 0x1234 0 1 0")
-
-            return
-
-        if ack_req:
-            opcode = 0x8202
-        else:
-            opcode = 0x8203
-
-        dst = int(dst_str, 0)
-        key_idx = int(key_idx_str, 0)
-        tid = int(tid_str, 0)
-        state = int(state_str, 0)
-
-        data = struct.pack('>HBb', opcode, tid, state)
-        self._send_message(dst, key_idx, data, self._reply_cb)
-
-    def set_unack_state(self, dst_str=None, key_idx_str=None, tid_str=None, state_str=None):
-        self.set_state(dst_str, key_idx_str, tid_str, state_str, False)
-
-        return
-
-    def _get_state_rsp(self, b_state):
-        print('{}: {}'.format(self._get_state_rsp.__name__, b_state))
-
-        print("Got state:", int.from_bytes(b_state, 'big'))
-
-    def process_message(self, source, key, data):
-        print("{}, {}: {} {} data: {}, len = {}".format(self.__class__.__name__,
-            self.process_message.__name__, source, key, data, len(data)))
-
-        opcode, data=struct.unpack('>H%ds' % (len(data)-2), bytes(data))
-        if opcode in self._responses.keys():
-            self._responses[opcode](data)
-        else:
-            print("Not handled by ", self.__class__.__name__)
-
-
-class SensorClient(Model):
-    def __init__(self, mid):
-        Model.__init__(self, model_id=mid)
-        self.cmd_ops = { 0x8231: self.sens_get, # sens get
-                       }
-        self._responses = { 0x52: self._sensor_status, # sensor status
-                          }
-
-    def _reply_cb(state):
-      print('State ')
-      print(state)
-      mainloop.quit()
-
-    def _send_message(self, dst, key, data, reply_cb):
-        print('SensorClient send data')
-        node.Send(self.path, dst, key, data, reply_handler=reply_cb,
-                  error_handler=error_cb)
-
-    def sens_get(self, dst_str=None, key_idx_str=None, prop_id_str=None):
-        print("{}: {} {}".format(self.sens_get.__name__, dst_str, key_idx_str,
-              prop_id_str))
-
-        if dst_str == None or key_idx_str == None or prop_id_str == None:
-            print("Wrong {} parameters".format(self.sens_get.__name__))
-            print("\tdst_addr key_index prop_id")
-            print("\n\texample: 0x1234 0 0x2A1F")
-
-            return
-
-        opcode = 0x8231
-        dst = int(dst_str, 0)
-        key_idx = int(key_idx_str, 0)
-        prop_id = int(prop_id_str, 0)
-
-        data = struct.pack('>H', opcode)
-        data = data + struct.pack('<H', prop_id)
-
-        self._send_message(dst, key_idx, data, self._reply_cb)
-
-    def _sensor_status(self, data):
-        print('{}: {}'.format(self._sensor_status.__name__,
-            binascii.hexlify(data)))
-        hdr_type = data[0] >> 7
-
-        if hdr_type == 0x00:
-            prop_len = (data[0] & 0x70) >> 4
-            prop_id = (data[0] & 0x03) << 8 | data[1]
-        else:
-            prop_len = data[0] & 0x7f
-            prop_id = data[2] << 8 | data[1]
-
-        print('type {}, len {}, id {:#x}'.format(hdr_type, prop_len, prop_id))
-
-        if prop_id == SigUnit.celsius_temperature:
-            value, = struct.unpack('<h', data[3:])
-            print("Temperature in celcius = {}C".format(value))
-
-
-    def process_message(self, source, key, data):
-        print("{}, {}: {} {} data: {}, len = {}".format(self.__class__.__name__,
-            self.process_message.__name__, source, key, data, len(data)))
-
-        opcode, data=struct.unpack('>B%ds' % (len(data)-1), bytes(data))
-        if opcode in self._responses.keys():
-            self._responses[opcode](data)
-        else:
-            print("Not handled by ", self.__class__.__name__)
-
 
 def attach_app_error_cb(error):
     print('Failed to register application: ' + str(error))
@@ -528,8 +367,6 @@ def main():
   app = Application(bus)
   first_ele = Element(bus, 0x00)
   first_ele.add_model(VndTextClient(0x0000))
-  first_ele.add_model(OnOffClient(0x1000))
-  first_ele.add_model(SensorClient(0x1102))
   app.add_element(first_ele)
 
   mainloop = GObject.MainLoop()
